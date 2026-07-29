@@ -34,12 +34,11 @@ function puntosAGeoJSON(puntos: Punto[]) {
 }
 
 function lineaAGeoJSON(puntos: Punto[]) {
+  // Un LineString necesita al menos 2 posiciones; con menos, GeoJSON invalido.
+  const coordinates = puntos.length >= 2 ? puntos.map((p) => [p.lon, p.lat]) : [];
   return {
     type: "Feature" as const,
-    geometry: {
-      type: "LineString" as const,
-      coordinates: puntos.map((p) => [p.lon, p.lat]),
-    },
+    geometry: { type: "LineString" as const, coordinates },
     properties: {},
   };
 }
@@ -56,6 +55,8 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
   const primerFitDoneRef = useRef(false);
   const onSeleccionarPuntoRef = useRef(onSeleccionarPunto);
   onSeleccionarPuntoRef.current = onSeleccionarPunto;
+  const puntosRef = useRef(puntos);
+  puntosRef.current = puntos;
 
   useEffect(() => {
     if (!contenedorRef.current) return;
@@ -140,7 +141,9 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
       });
 
       cargadoRef.current = true;
-      actualizarDatos(puntos);
+      // Usa la ref, no el "puntos" capturado al montar: para cuando "load"
+      // termina (asincrono), ya puede haber datos mas recientes.
+      actualizarDatos(puntosRef.current);
     });
 
     return () => {
@@ -149,7 +152,6 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
       cargadoRef.current = false;
       primerFitDoneRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function actualizarDatos(puntosActuales: Punto[]) {
