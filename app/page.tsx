@@ -124,28 +124,19 @@ export default function Home() {
   const ultimoPunto = puntos[puntos.length - 1];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <header
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "1rem",
-          alignItems: "center",
-          padding: "0.75rem 1rem",
-          borderBottom: "1px solid #ddd",
-        }}
-      >
-        <strong>Camino de Santi(ago) — POC tracking</strong>
+    <div className="app-shell">
+      <header className="header">
+        <strong className="header-title">Camino de Santi(ago) — POC tracking</strong>
 
         {trayectoActivo ? (
-          <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div className="header-group">
             Activo: <strong>{trayectoActivo.nombre}</strong>
             <button onClick={finalizarTrayecto} disabled={cargandoAccion}>
               Finalizar trayecto
             </button>
-          </span>
+          </div>
         ) : (
-          <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div className="header-group">
             <input
               placeholder="Nombre del trayecto"
               value={nombreNuevo}
@@ -155,10 +146,10 @@ export default function Home() {
             <button onClick={iniciarTrayecto} disabled={cargandoAccion || !nombreNuevo.trim()}>
               Iniciar trayecto
             </button>
-          </span>
+          </div>
         )}
 
-        <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+        <label className="field-label">
           Trayecto:
           <select
             value={seleccionadoId ?? ""}
@@ -173,7 +164,7 @@ export default function Home() {
           </select>
         </label>
 
-        <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+        <label className="field-label">
           Refresco cada:
           <select
             value={asiduidad}
@@ -190,8 +181,8 @@ export default function Home() {
         {error && <span style={{ color: "#CE2029" }}>{error}</span>}
       </header>
 
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ flex: 1, position: "relative" }}>
+      <div className="content">
+        <div className="map-pane">
           {puntos.length === 0 ? (
             <div
               style={{
@@ -200,6 +191,8 @@ export default function Home() {
                 justifyContent: "center",
                 height: "100%",
                 color: "#666",
+                textAlign: "center",
+                padding: "0 1.5rem",
               }}
             >
               Inicia un trayecto y empieza a andar…
@@ -213,18 +206,7 @@ export default function Home() {
           )}
 
           {puntoActivo && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: "1rem",
-                left: "1rem",
-                background: "white",
-                border: "1px solid #ccc",
-                borderRadius: 6,
-                padding: "0.75rem 1rem",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              }}
-            >
+            <div className="point-popup">
               <div>
                 <strong>Coordenadas:</strong> {puntoActivo.lat.toFixed(5)},{" "}
                 {puntoActivo.lon.toFixed(5)}
@@ -245,17 +227,10 @@ export default function Home() {
           )}
         </div>
 
-        <aside
-          style={{
-            width: 260,
-            borderLeft: "1px solid #ddd",
-            padding: "1rem",
-            overflowY: "auto",
-          }}
-        >
+        <aside className="stats-pane">
           <h3>Estadísticas</h3>
           {detalle ? (
-            <ul style={{ listStyle: "none", display: "grid", gap: "0.5rem" }}>
+            <ul className="stats-list">
               <li>
                 <strong>Tiempo:</strong> {formatDuracion(detalle.stats.duracionMin)}
               </li>
