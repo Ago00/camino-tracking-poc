@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  MapLibreMap,
-  LngLatBounds,
-  type GeoJSONSource,
-  type MapLayerMouseEvent,
-} from "maplibre-gl";
+import { MapLibreMap, LngLatBounds, Marker, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Punto } from "@/lib/types";
 
@@ -17,20 +12,19 @@ const TILES_VOYAGER = [
   "https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
 ];
 
-const FUENTE_TRAZA = "traza";
 const CAPA_LINEA = "traza-linea";
-const CAPA_PUNTOS = "traza-puntos";
-const CAPA_ULTIMO = "traza-ultimo";
 
-function puntosAGeoJSON(puntos: Punto[]) {
-  return {
-    type: "FeatureCollection" as const,
-    features: puntos.map((p, i) => ({
-      type: "Feature" as const,
-      geometry: { type: "Point" as const, coordinates: [p.lon, p.lat] },
-      properties: { ...p, esUltimo: i === puntos.length - 1 },
-    })),
-  };
+function crearElementoPunto(esUltimo: boolean): HTMLDivElement {
+  const el = document.createElement("div");
+  const tamano = esUltimo ? 26 : 18;
+  el.style.width = `${tamano}px`;
+  el.style.height = `${tamano}px`;
+  el.style.borderRadius = "50%";
+  el.style.background = esUltimo ? "#D9773B" : "#2F5D50";
+  el.style.border = "3px solid #ffffff";
+  el.style.boxShadow = "0 0 4px rgba(0,0,0,0.5)";
+  el.style.cursor = "pointer";
+  return el;
 }
 
 function lineaAGeoJSON(puntos: Punto[]) {
@@ -57,6 +51,7 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
   onSeleccionarPuntoRef.current = onSeleccionarPunto;
   const puntosRef = useRef(puntos);
   puntosRef.current = puntos;
+  const marcadoresRef = useRef<Marker[]>([]);
 
   useEffect(() => {
     if (!contenedorRef.current) return;
@@ -83,10 +78,6 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
     mapaRef.current = mapa;
 
     mapa.on("load", () => {
-      mapa.addSource(FUENTE_TRAZA, {
-        type: "geojson",
-        data: puntosAGeoJSON([]),
-      });
       mapa.addSource("linea", {
         type: "geojson",
         data: lineaAGeoJSON([]),
@@ -97,47 +88,6 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
         type: "line",
         source: "linea",
         paint: { "line-color": "#3B357A", "line-width": 3 },
-      });
-
-      mapa.addLayer({
-        id: CAPA_PUNTOS,
-        type: "circle",
-        source: FUENTE_TRAZA,
-        filter: ["!=", ["get", "esUltimo"], true],
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#2F5D50",
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
-
-      mapa.addLayer({
-        id: CAPA_ULTIMO,
-        type: "circle",
-        source: FUENTE_TRAZA,
-        filter: ["==", ["get", "esUltimo"], true],
-        paint: {
-          "circle-radius": 8,
-          "circle-color": "#D9773B",
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
-
-      const alClicarPunto = (e: MapLayerMouseEvent) => {
-        const props = e.features?.[0]?.properties;
-        if (props) onSeleccionarPuntoRef.current(props as unknown as Punto);
-      };
-      mapa.on("click", CAPA_PUNTOS, alClicarPunto);
-      mapa.on("click", CAPA_ULTIMO, alClicarPunto);
-      [CAPA_PUNTOS, CAPA_ULTIMO].forEach((capa) => {
-        mapa.on("mouseenter", capa, () => {
-          mapa.getCanvas().style.cursor = "pointer";
-        });
-        mapa.on("mouseleave", capa, () => {
-          mapa.getCanvas().style.cursor = "";
-        });
       });
 
       cargadoRef.current = true;
@@ -158,10 +108,16 @@ export default function Mapa({ puntos, onSeleccionarPunto }: Props) {
     const mapa = mapaRef.current;
     if (!mapa || !cargadoRef.current) return;
 
-    const fuentePuntos = mapa.getSource(FUENTE_TRAZA) as GeoJSONSource | undefined;
     const fuenteLinea = mapa.getSource("linea") as GeoJSONSource | undefined;
-    fuentePuntos?.setData(puntosAGeoJSON(puntosActuales));
     fuenteLinea?.setData(lineaAGeoJSON(puntosActuales));
+
+    marcadoresRef.current.forEach((m) => m.remove());
+    marcadoresRef.current = puntosActuales.map((punto, i) => {
+      const esUltimo = i === puntosActuales.length - 1;
+      const el = crearElementoPunto(esUltimo);
+      el.addEventListener("click", () => onSeleccionarPuntoRef.current(punto));
+      return new Marker({ element: el }).setLngLat([punto.lon, punto.lat]).addTo(mapa);
+    });
 
     if (puntosActuales.length > 0 && !primerFitDoneRef.current) {
       const bounds = puntosActuales.reduce(
