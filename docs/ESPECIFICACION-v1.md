@@ -46,7 +46,7 @@
 - **Desvíos**: pequeño → pinta sobre el plan; grande → pinta la traza real; al reenganchar, el tramo previsto saltado se da por avanzado.
 - **Por cada punto guardar**: `lat, lon, timestamp, fuente (app|manual)`.
 - Umbral "fuera de ruta"; rechazo de saltos imposibles (velocidad); **descartar último punto** (soft, reversible); corrección manual.
-- **Traza**: única y fija, **O Porriño → Santiago (~100 km)**. La prepara Claude (Wikiloc/OSM), Santi valida. GeoJSON.
+- **Traza**: única y fija, **desde el mojón físico del km 100 (o el más cercano) hasta Santiago**. La Xunta coloca mojones de granito con distancia exacta cada 500 m en todo el tramo gallego, así que debería existir un mojón real con "100" tallado muy cerca del punto calculado matemáticamente (~1,8 km antes de O Porriño, dentro de la etapa Tui-O Porriño). Al montar el GeoJSON se busca ese punto por distancia acumulada; se ajusta a la coordenada real del mojón físico cuando se confirme sobre el terreno/fotos. Objetivo: que la barra llegue literalmente al 100%, arrancando en el mojón real. La prepara Claude (Wikiloc/OSM), Santi valida. GeoJSON.
 - **Lista de pueblos por km** (O Porriño 0 … Santiago 100): para "cerca de X" en el panel y para los hitos automáticos (v2).
 - **ETA**: fuera (el ritmo baja con el cansancio y engañaría). **Ritmo**: medio global.
 
@@ -59,23 +59,24 @@
 - **Comentarios**: nunca anónimos (llevan nombre); el autor elige público/privado; en público solo se muestran los públicos y no ocultados.
 
 ## Panel de administración (v1, CERRADO)
-- **Acceso**: URL propia y discreta + `noindex`, detrás de **contraseña única (env var) + cookie firmada HttpOnly**. Botón salir. (La URL oculta es solo capa extra; la cerradura es la contraseña.)
-- **Actividad**: Iniciar (→ Durante, fija inicio) · Finalizar (→ Llegada, fija fin, con **mensaje de llegada** editable = sugerencia + confirmar) · **Volver a Antes** (confirmación fuerte).
+- **Acceso**: URL propia y discreta + `noindex`, detrás de **contraseña única (env var) + cookie firmada HttpOnly**. Botón salir. (La URL oculta es solo capa extra; la cerradura es la contraseña.) Protección centralizada en **middleware** sobre `/admin/*` (un único punto de verdad, ninguna página puede quedar desprotegida por olvido). Mutaciones del panel como **Server Actions**; el endpoint `/api/track` (route handler) se mantiene para el móvil, que llama desde fuera.
+- **Actividad**: Iniciar (→ Durante, fija inicio) · Finalizar (→ Llegada, fija fin, con **mensaje de llegada** editable = sugerencia + confirmar) · **Volver a Antes** (confirmación fuerte) · **Reiniciar** (confirmación fuerte): cierra el intento actual y abre uno nuevo en fase Antes. **Nada se borra**: cada intento tiene id interno y las posiciones apuntan a su intento, así que si el día del Camino algo se buguea se puede reiniciar limpio y al volver todo el histórico (incluido lo previo al reinicio) sigue en la BDD. Por dentro hay N intentos; en la UI solo existe el activo (sin gestor de trayectos).
 - **Posición**: "fichar mi posición ahora" (geolocalización del navegador → **mismo endpoint** que la app) · ver última + "hace cuánto" + fuente · **descartar último punto**.
 - **Intenciones**: leer / eliminar.
 - **Comentarios**: ocultar / mostrar / eliminar + filtro (todos/públicos/ocultos).
-- NO edita los textos de la web (solo opera). NO muestra resumen en vivo.
+- **Textos de la web**: editables desde el panel (sección de contenido/copy). Patrón: **el texto por defecto vive en el código y la fila en BDD lo sobrescribe si existe** (tabla `textos` clave→valor, clave libre sin enum). Editar un texto existente = solo panel, cero código, se refleja solo en la web pública; si falta la clave en BDD la web cae al valor por defecto (nunca sale en blanco). Añadir un texto *nuevo* sí requiere código (decidir dónde se pinta). NO muestra resumen en vivo.
 - **v2**: gestión del directo (editar/eliminar entradas del minuto a minuto y los hitos automáticos).
 
 ## Contador de seguidores (v2)
 Nombre del visitante en `localStorage` + tabla de presencia → "ahora te siguen: Marta, Javi y 12 más". Tira discreta, no bloqueante.
 
 ## Pendientes (para retomar)
-- Textos / copy finales de la web (aplazado).
-- **Foto con luz** para la esfera-cara del monigote (la de atardecer salía oscura).
-- Pulido "pro" del diseño con referencias que traerá Santi.
-- **Traza real GPX** O Porriño → Santiago.
+- Textos / copy finales de la web — se editarán desde el panel admin (ver sección Panel), no bloquea el desarrollo.
+- **Foto con luz** para la esfera-cara del monigote — la hace Santi más adelante, no bloquea.
+- Pulido "pro" del diseño con referencias — aparcado, se valora si hace falta.
+- **Traza real GPX** O Porriño → Santiago — ruta confirmada: Camino Portugués Central, trazado único (O Porriño→Redondela→Pontevedra→Caldas de Reis→Padrón→Santiago, ≈98 km), sin desvíos reales que resolver (la Variante Espiritual con barco no aplica). Pendiente montar el GeoJSON real.
 - Cuentas: **Supabase, Vercel, MapTiler**.
+- Repo v1: **público** (igual que la POC, por la limitación de Vercel Hobby).
 
 ## POC de tracking (SIGUIENTE PASO)
 Objetivo: validar que las coordenadas viajan del móvil al mapa, **probándolo andando**.
